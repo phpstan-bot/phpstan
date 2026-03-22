@@ -162,6 +162,8 @@ jobs:
             
             For each identifier, create `website/errors/<identifier>.md` following the file format, content guidelines, and tone described in `website/errors/CLAUDE.md`. Read that file before generating any markdown.
 
+            Each file's frontmatter MUST include a `shortDescription` field — one sentence (ending with a period) describing when the error is reported, from a user's perspective. For example: `"Accessing a private property from outside the declaring class."` or `"Loose comparison using == will always evaluate to true."`. This description should capture the essence of the error — what code pattern triggers it — without mentioning PHPStan internals.
+
             ## Step 5: Write a summary
 
             After completing the fix, write two files:
@@ -200,7 +202,7 @@ jobs:
               echo "${delimiter}"
             } >> "$GITHUB_OUTPUT"
           else
-            echo "pr_bodyUpdate error identifiers docs" >> "$GITHUB_OUTPUT"
+            echo "pr_body=Update error identifiers docs" >> "$GITHUB_OUTPUT"
           fi
 
       - name: "Create Pull Request"
