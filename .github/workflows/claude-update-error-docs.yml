@@ -51,19 +51,19 @@ jobs:
           git config user.name "phpstan-bot"
           git config user.email "ondrej+phpstanbot@mirtes.cz"
 
-          claude --model claude-opus-4-6 \
+          claude --model claude-opus-4-8 \
           --dangerously-skip-permissions \
           -p "$(cat << 'PROMPT_EOF'
             You are generating documentation pages for PHPStan error identifiers. PHPStan is a PHP static analysis tool that finds bugs in code without running it. Each error identifier (like `argument.type`, `deadCode.unreachable`, `property.notFound`) categorizes a specific type of error.
-            
+
             The goal is to create a markdown file for each identifier in `website/errors/` explaining what the error means, showing a code example, and offering ways to fix it.
-          
+
           ## Step 1: Find what changed
-          
+
           See the checked out commit of the current repository. It should contain changes to `website/src/errorsIdentifiers.json`. See if the diff means any identifier was added or updated.
-          
+
           Read `website/src/errorsIdentifiers.json`. This JSON maps each identifier to its rule classes and source code locations:
-            
+
             ```json
             {
               "argument.type": {
@@ -75,21 +75,21 @@ jobs:
               }
             }
             ```
-            
+
             Then list existing files in `website/errors/`. Each file is named `<identifier>.md`.
-          
+
             You will document any identifiers that do not have .md file. You will also look if any identifiers involved in the diff of the checked out commit need updating the docs.
-            
+
             ## Step 2: Clone required repositories
-            
+
             Clone only the repositories referenced by the affected identifiers. Extract the branch name from the GitHub URLs (e.g., `blob/2.2.x/` → branch `2.2.x`).
-          
+
           Use shallow clones to save time:
-            
+
             ```bash
             git clone --depth 1 --branch <branch> https://github.com/phpstan/<repo>.git /tmp/repos/<repo>
             ```
-          
+
           The possible repositories are:
             - `phpstan/phpstan-src` (typically branch `2.2.x`)
             - `phpstan/phpstan-strict-rules`
@@ -98,68 +98,68 @@ jobs:
             - `phpstan/phpstan-symfony`
             - `phpstan/phpstan-phpunit`
             - `phpstan/phpstan-nette`
-          
+
           ## Step 3: Research each identifier
-            
+
             For each identifier, gather the information needed to write the documentation.
-          
+
           ### 3a. Read the rule source code
-          
+
           From the JSON URLs, extract the file path and line number. Read the source code around those lines to find:
-          
+
           1. **Error message**: Look for `RuleErrorBuilder::message('...')` — this is the exact error text PHPStan shows
           2. **Trigger condition**: Read the surrounding `processNode()` method to understand what code pattern causes this error
           3. **Tips**: Look for `->tip('...')` or `->addTip('...')` calls in the same builder chain — these often contain links to blog posts or documentation pages on phpstan.org
           4. **Non-ignorable**: Check for `->nonIgnorable()` in the builder chain
-          
+
           ### 3b. Understand the identifier prefix when source uses `$location->createIdentifier()`
-            
+
             When reading the rule source code in step 3a, check whether the linked source code line uses `$location->createIdentifier()`. If it does, the identifier prefix comes from `ClassNameUsageLocation` in phpstan-src, and the prefix indicates a specific PHP language feature — which may not be obvious from the prefix name alone.
-            
+
             If the source code does **not** use `$location->createIdentifier()`, the prefix is set directly by the rule and typically describes its PHP feature straightforwardly.
-            
+
             Consult the "Identifier prefix reference" section in `website/errors/CLAUDE.md` for the complete prefix-to-PHP-feature mapping tables.
-          
+
           ### 3c. Find test fixtures with code examples
-          
+
           For a rule class like `PHPStan\Rules\Functions\CallToFunctionParametersRule`:
             - Test class: `tests/PHPStan/Rules/Functions/CallToFunctionParametersRuleTest.php`
             - Test data: `tests/PHPStan/Rules/Functions/data/*.php`
-            
+
             For extension repos (phpstan-doctrine, phpstan-symfony, etc.), the path pattern may differ — check `tests/Rules/` or `tests/` directories.
-          
+
           Read the test class to find which data files trigger this specific identifier. Look for the error message text in the test assertions:
-            
+
             ```php
             $this->analyse([__DIR__ . '/data/someFile.php'], [
             ['Error message text', 42],
           ]);
             ```
-            
+
             Then read the corresponding data file to extract a minimal code example.
-          
+
           ### 3d. Determine if the error is ignorable
-          
+
           An error identifier is **not ignorable** if:
             - The source code uses `->nonIgnorable()` in the error builder chain
             - The identifier starts with `phpstan.` (internal PHPStan errors)
             - The identifier starts with `phpstanPlayground.` (playground-specific)
-            
+
             All other identifiers are ignorable.
-            
+
             ### 3e. Check for configuration options
-            
+
             Some rules accept constructor parameters from PHPStan configuration. Look at the rule class constructor for injected config values. Cross-reference with `website/src/config-reference.md` to find the documented parameter name.
-          
+
           Examples of configurable rules:
             - Rules that check strict types may be controlled by `treatPhpDocTypesAsCertain`
             - Dead code rules may be controlled by `checkAlwaysTrueCheckTypeFunctionCall`
             - Some rules are only active at certain PHPStan levels
-          
+
           ## Step 4: Generate markdown files
-            
+
             Create `website/errors/` directory if it doesn't exist.
-            
+
             For each identifier, create `website/errors/<identifier>.md` following the file format, content guidelines, and tone described in `website/errors/CLAUDE.md`. Read that file before generating any markdown.
 
             Each file's frontmatter MUST include a `shortDescription` field — one sentence (ending with a period) describing when the error is reported, from a user's perspective. For example: `"Accessing a private property from outside the declaring class."` or `"Loose comparison using == will always evaluate to true."`. This description should capture the essence of the error — what code pattern triggers it — without mentioning PHPStan internals.
@@ -170,13 +170,13 @@ jobs:
 
             1. /tmp/commit-message.txt - A concise commit message (first line: short summary under 72 chars, then a blank line, then a few bullet points describing key changes). Example:
                Update error docs - added new `new.trait` identifier
-          
+
               More detailed description of the commit
             2. /tmp/pr-description.md - A pull request description in this format:
                What was the work involved in updating the docs.
 
             These files are critical - they will be used for the commit message and PR description.
-          
+
           PROMPT_EOF
           )"
 
