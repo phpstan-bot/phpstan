@@ -214,7 +214,7 @@ jobs:
           push-to-fork: phpstan-bot/phpstan
           branch-suffix: random
           delete-branch: true
-          base: 2.2.x
+          base: 2.3.x
           title: "Update Error Docs"
           body: ${{ steps.claude-summary.outputs.pr_body }}
           committer: "phpstan-bot <ondrej+phpstanbot@mirtes.cz>"
