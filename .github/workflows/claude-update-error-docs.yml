@@ -111,6 +111,7 @@ jobs:
           2. **Trigger condition**: Read the surrounding `processNode()` method to understand what code pattern causes this error
           3. **Tips**: Look for `->tip('...')` or `->addTip('...')` calls in the same builder chain — these often contain links to blog posts or documentation pages on phpstan.org
           4. **Non-ignorable**: Check for `->nonIgnorable()` in the builder chain
+          5. **Auto-fixable**: Check for `->fixNode()` or `->removeNode()` calls on the same error builder (they can be in the chain or called later on the builder variable, sometimes conditionally)
 
           ### 3b. Understand the identifier prefix when source uses `$location->createIdentifier()`
 
@@ -147,7 +148,13 @@ jobs:
 
             All other identifiers are ignorable.
 
-            ### 3e. Check for configuration options
+            ### 3e. Determine if the error is auto-fixable
+
+            An error identifier is **auto-fixable** if the rule attaches a fix to the error by calling `->fixNode()` or `->removeNode()` on its `RuleErrorBuilder`. Users can then fix it with `phpstan analyse --fix`. Add `autofixable: true` to the frontmatter of these identifiers. Omit the field for all other identifiers.
+
+            When an identifier involved in the diff gained or lost a `->fixNode()` or `->removeNode()` call, add or remove `autofixable: true` in its existing .md file.
+
+            ### 3f. Check for configuration options
 
             Some rules accept constructor parameters from PHPStan configuration. Look at the rule class constructor for injected config values. Cross-reference with `website/src/config-reference.md` to find the documented parameter name.
 
